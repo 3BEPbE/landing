@@ -1,5 +1,5 @@
 {
-  "name": "landing",
+  "name": "zorivo",
   "private": true,
   "scripts": {
     "deploy": "wrangler deploy",

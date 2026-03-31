@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://zorivo.com/sitemap.xml
+Sitemap: https://zorivo.uz/sitemap.xml
