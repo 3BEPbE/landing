@@ -588,9 +588,14 @@ function initAlienTank(ufo) {
   const HITS_TO_RETALIATE = 6;
   let destroyed = false;
   let fleetHitCount = 0;
-  const FLEET_HITS_TO_DESTROY = 45;
   let ufoDestroyed = false;
   const fleetVehicles = [];
+
+  /* UFO progressive retaliation phases */
+  let fleetKillPhase = 0;
+  const fleetKillThresholds = [20, 25, 33, 40]; /* cumulative hit counts to trigger kills */
+  const fleetKillOrder = [0, 1, 2, 3]; /* indices: centipede, oculus, mantis, scarab — all die */
+  let megaPhaseStarted = false;
 
   /* ── Helpers ── */
   function getBarrelTip(el) {
@@ -716,7 +721,7 @@ function initAlienTank(ufo) {
         w.style.animationDuration = Math.max(0.08, 0.3 / (speed / 60)) + "s";
       });
       /* walker / crawler legs */
-      const legs = v.el.querySelectorAll(".centi-leg, .oculus-stilt-l, .oculus-stilt-r, .mantis-wleg");
+      const legs = v.el.querySelectorAll(".centi-leg, .oculus-stilt-l, .oculus-stilt-r, .mantis-wleg, .mega-leg-l, .mega-leg-r");
       legs.forEach(l => {
         l.style.animationPlayState = moving ? "running" : "paused";
         l.style.animationDuration = Math.max(0.3, 1.2 / (speed / 40)) + "s";
@@ -927,6 +932,97 @@ function initAlienTank(ufo) {
     setTimeout(() => spawnFleet(), 2500);
   }
 
+  /* ── UFO retaliates against a fleet vehicle ── */
+  function ufoRetaliateFleet(targetEl) {
+    if (!document.body.contains(targetEl) || ufoDestroyed) return;
+
+    ufo.classList.add("ufo-charging");
+
+    setTimeout(() => {
+      if (!document.body.contains(targetEl) || ufoDestroyed) {
+        ufo.classList.remove("ufo-charging");
+        return;
+      }
+      ufo.classList.remove("ufo-charging");
+
+      const beam = document.createElement("div");
+      beam.className = "ufo-death-beam";
+      beam.style.transformOrigin = "0 center";
+      document.body.appendChild(beam);
+
+      const uf = document.createElement("div");
+      uf.className = "ufo-beam-flash";
+      document.body.appendChild(uf);
+
+      function positionBeam() {
+        const uc = getUfoCenter();
+        const tc = getElCenter(targetEl);
+        const dx = tc.x - uc.x;
+        const dy = tc.y - uc.y;
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+        const dist = Math.hypot(dx, dy);
+        beam.style.left = uc.x + "px";
+        beam.style.top = (uc.y - 4) + "px";
+        beam.style.width = dist + "px";
+        beam.style.transform = "rotate(" + angle + "deg)";
+        uf.style.left = (uc.x - 25) + "px";
+        uf.style.top = (uc.y - 25) + "px";
+      }
+      positionBeam();
+
+      let beamRaf;
+      const beamStart = performance.now();
+      (function trackBeam() {
+        positionBeam();
+        if (performance.now() - beamStart < 400) {
+          beamRaf = requestAnimationFrame(trackBeam);
+        }
+      })();
+
+      setTimeout(() => uf.remove(), 500);
+
+      setTimeout(() => {
+        cancelAnimationFrame(beamRaf);
+        beam.remove();
+        explodeFleetVehicle(targetEl);
+      }, 400);
+    }, 1000);
+  }
+
+  /* ── Explode a fleet vehicle ── */
+  function explodeFleetVehicle(el) {
+    const c = getElCenter(el);
+    for (let i = 0; i < 24; i++) {
+      const p = document.createElement("div");
+      p.className = "explosion-particle";
+      const a = Math.random() * Math.PI * 2;
+      const radius = 30 + Math.random() * 90;
+      p.style.left = c.x + "px";
+      p.style.top = c.y + "px";
+      p.style.setProperty("--tx", Math.cos(a) * radius + "px");
+      p.style.setProperty("--ty", Math.sin(a) * radius + "px");
+      p.style.background = ["#ff6600","#ffaa00","#ff3300","#ffcc44","#fff"][Math.floor(Math.random()*5)];
+      const sz = 4 + Math.random() * 10;
+      p.style.width = sz + "px";
+      p.style.height = sz + "px";
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 900);
+    }
+    const fl = document.createElement("div");
+    fl.className = "explosion-flash";
+    fl.style.left = (c.x - 60) + "px";
+    fl.style.top = (c.y - 60) + "px";
+    document.body.appendChild(fl);
+    setTimeout(() => fl.remove(), 600);
+
+    el.style.opacity = "0";
+    /* Mark physics vehicle as dead */
+    for (const pv of allVehicles) {
+      if (pv.el === el) { pv.alive = false; break; }
+    }
+    setTimeout(() => { if (document.body.contains(el)) el.remove(); }, 500);
+  }
+
   /* ── Phase 2: Alien Ground Fleet (physics-driven) ── */
   function spawnFleet() {
     const W = window.innerWidth;
@@ -1131,7 +1227,197 @@ function initAlienTank(ufo) {
 
         if (!ufoDestroyed) {
           fleetHitCount++;
-          if (fleetHitCount >= FLEET_HITS_TO_DESTROY) {
+          /* Check if it's time for UFO to kill a fleet vehicle */
+          if (fleetKillPhase < fleetKillThresholds.length &&
+              fleetHitCount >= fleetKillThresholds[fleetKillPhase]) {
+            const killIdx = fleetKillOrder[fleetKillPhase];
+            fleetKillPhase++;
+            const target = fleetVehicles[killIdx];
+            if (target && document.body.contains(target.el)) {
+              setTimeout(() => ufoRetaliateFleet(target.el), 600);
+            }
+            /* After all 4 fleet vehicles are dead, summon mega robots */
+            if (fleetKillPhase >= fleetKillThresholds.length && !megaPhaseStarted) {
+              megaPhaseStarted = true;
+              setTimeout(() => spawnMegaRobots(), 3000);
+            }
+          }
+        }
+        return;
+      }
+      if (px < -60 || px > innerWidth + 60 || py < -60 || py > innerHeight + 60) {
+        bolt.remove();
+        return;
+      }
+      requestAnimationFrame(fly);
+    }
+    requestAnimationFrame(fly);
+  }
+
+  /* ── Phase 3: Mega Robots ── */
+  const megaVehicles = [];
+  let megaHitCount = 0;
+  const MEGA_HITS_TO_DESTROY = 12;
+
+  function spawnMegaRobots() {
+    const W = window.innerWidth;
+    const megaCfgs = [
+      { startX: -300, targetX: W * 0.04, flip: false,
+        patrolMin: W * 0.01, patrolMax: W * 0.14, delay: 0 },
+      { startX: -350, targetX: W * 0.18, flip: false,
+        patrolMin: W * 0.12, patrolMax: W * 0.28, delay: 400 },
+      { startX: -400, targetX: W * 0.33, flip: false,
+        patrolMin: W * 0.25, patrolMax: W * 0.42, delay: 800 },
+      { startX: W + 300, targetX: W * 0.58, flip: true,
+        patrolMin: W * 0.50, patrolMax: W * 0.66, delay: 200 },
+      { startX: W + 350, targetX: W * 0.72, flip: true,
+        patrolMin: W * 0.64, patrolMax: W * 0.80, delay: 600 },
+      { startX: W + 400, targetX: W * 0.88, flip: true,
+        patrolMin: W * 0.80, patrolMax: W * 0.95, delay: 1000 },
+    ];
+
+    const megaHTML =
+      '<div class="mega-robot">' +
+        '<div class="mega-head">' +
+          '<div class="mega-visor"></div>' +
+          '<div class="mega-antenna-l"></div>' +
+          '<div class="mega-antenna-r"></div>' +
+        '</div>' +
+        '<div class="mega-torso">' +
+          '<div class="mega-core"></div>' +
+          '<div class="mega-vent mv-l"></div>' +
+          '<div class="mega-vent mv-r"></div>' +
+        '</div>' +
+        '<div class="mega-arm mega-arm-l">' +
+          '<div class="mega-cannon">' +
+            '<div class="fleet-barrel mega-barrel"></div>' +
+            '<div class="mega-cannon-glow"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="mega-arm mega-arm-r">' +
+          '<div class="mega-cannon">' +
+            '<div class="fleet-barrel mega-barrel"></div>' +
+            '<div class="mega-cannon-glow"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="mega-leg mega-leg-l"></div>' +
+        '<div class="mega-leg mega-leg-r"></div>' +
+        '<div class="mega-foot mega-foot-l"></div>' +
+        '<div class="mega-foot mega-foot-r"></div>' +
+        '<div class="mega-jetpack">' +
+          '<div class="mega-flame mf-l"></div>' +
+          '<div class="mega-flame mf-r"></div>' +
+        '</div>' +
+      '</div>';
+
+    megaCfgs.forEach((cfg, i) => {
+      setTimeout(() => {
+        const v = document.createElement("div");
+        v.className = "fleet-vehicle mega-vehicle";
+        v.setAttribute("aria-hidden", "true");
+        v.innerHTML = megaHTML;
+        v.style.bottom = "10px";
+        if (cfg.flip) v.style.transform = "scaleX(-1)";
+        document.body.appendChild(v);
+        megaVehicles.push({ el: v, cfg: cfg });
+
+        /* screen shake on each landing */
+        setTimeout(() => {
+          document.body.classList.add("mega-shake");
+          setTimeout(() => document.body.classList.remove("mega-shake"), 300);
+        }, 1500);
+
+        const barrel = v.querySelector(".fleet-barrel");
+
+        addPhysicsVehicle(v, {
+          startX: cfg.startX,
+          targetX: cfg.targetX,
+          maxSpeed: 100,
+          accel: 160,
+          patrolMin: cfg.patrolMin,
+          patrolMax: cfg.patrolMax,
+          flip: cfg.flip,
+          type: "mega",
+          onArrive: function() {
+            /* aim */
+            function aim() {
+              if (!document.body.contains(v) || ufoDestroyed) return;
+              const br = barrel.getBoundingClientRect();
+              const bx = cfg.flip ? br.right : br.left;
+              const by = br.top + br.height / 2;
+              const uc = getUfoCenter();
+              let angle = Math.atan2(uc.y - by, uc.x - bx) * (180 / Math.PI);
+              if (cfg.flip) angle = 180 - angle;
+              barrel.style.transform = "rotate(" + angle + "deg)";
+              requestAnimationFrame(aim);
+            }
+            requestAnimationFrame(aim);
+
+            /* shoot heavy bolts */
+            function shoot() {
+              if (!document.body.contains(v) || ufoDestroyed) return;
+              fireMegaBolt(v, barrel, cfg);
+              setTimeout(shoot, 800 + Math.random() * 400);
+            }
+            setTimeout(shoot, 400);
+          }
+        });
+      }, cfg.delay);
+    });
+  }
+
+  function fireMegaBolt(vehicle, barrel, cfg) {
+    if (!document.body.contains(vehicle) || ufoDestroyed) return;
+    const br = barrel.getBoundingClientRect();
+    const flip = cfg.flip;
+    const bx = flip ? br.left : br.right;
+    const by = br.top + br.height / 2;
+    const uc = getUfoCenter();
+    const dx = uc.x - bx;
+    const dy = uc.y - by;
+    const angle = Math.atan2(dy, dx);
+    const spread = (Math.random() - 0.5) * 0.04;
+    const fAngle = angle + spread;
+    const aDeg = fAngle * (180 / Math.PI);
+
+    /* heavy muzzle flash */
+    const flash = document.createElement("div");
+    flash.className = "mega-muzzle-flash";
+    flash.style.left = (bx - 14) + "px";
+    flash.style.top = (by - 14) + "px";
+    document.body.appendChild(flash);
+    setTimeout(() => flash.remove(), 300);
+
+    const bolt = document.createElement("div");
+    bolt.className = "mega-bolt";
+    document.body.appendChild(bolt);
+
+    const speed = 1800;
+    const vx = Math.cos(fAngle) * speed;
+    const vy = Math.sin(fAngle) * speed;
+    let px = bx, py = by, last = performance.now();
+
+    function fly(now) {
+      const dt = Math.min((now - last) / 1000, 0.05);
+      last = now;
+      px += vx * dt;
+      py += vy * dt;
+      bolt.style.left = px + "px";
+      bolt.style.top = (py - 4) + "px";
+      bolt.style.transform = "rotate(" + aDeg + "deg)";
+
+      const hb = getUfoHitbox();
+      if (Math.hypot(px - hb.x, py - hb.y) < hb.r + 8) {
+        spawnMegaImpact(px, py);
+        ufo.classList.remove("tank-hit");
+        void ufo.offsetWidth;
+        ufo.classList.add("tank-hit");
+        setTimeout(() => ufo.classList.remove("tank-hit"), 300);
+        bolt.remove();
+
+        if (!ufoDestroyed) {
+          megaHitCount++;
+          if (megaHitCount >= MEGA_HITS_TO_DESTROY) {
             ufoDestroyed = true;
             explodeUfo();
           }
@@ -1145,6 +1431,32 @@ function initAlienTank(ufo) {
       requestAnimationFrame(fly);
     }
     requestAnimationFrame(fly);
+  }
+
+  function spawnMegaImpact(x, y) {
+    /* big impact burst */
+    for (let i = 0; i < 8; i++) {
+      const p = document.createElement("div");
+      p.className = "explosion-particle";
+      const a = Math.random() * Math.PI * 2;
+      const radius = 10 + Math.random() * 30;
+      p.style.left = x + "px";
+      p.style.top = y + "px";
+      p.style.setProperty("--tx", Math.cos(a) * radius + "px");
+      p.style.setProperty("--ty", Math.sin(a) * radius + "px");
+      p.style.background = ["#00ffcc","#44ffaa","#00ddff","#fff"][Math.floor(Math.random()*4)];
+      const sz = 3 + Math.random() * 6;
+      p.style.width = sz + "px";
+      p.style.height = sz + "px";
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 500);
+    }
+    const imp = document.createElement("div");
+    imp.className = "plasma-impact mega-impact";
+    imp.style.left = (x - 16) + "px";
+    imp.style.top = (y - 16) + "px";
+    document.body.appendChild(imp);
+    setTimeout(() => imp.remove(), 400);
   }
 
   /* ── UFO Destruction ── */
@@ -1207,9 +1519,9 @@ function initAlienTank(ufo) {
 
   function retreatFleet() {
     const W = window.innerWidth;
+    /* retreat remaining fleet vehicles */
     for (const fv of fleetVehicles) {
       if (!document.body.contains(fv.el)) continue;
-      /* find this vehicle's physics state and send it offscreen */
       const exitX = fv.cfg.flip ? W + 300 : -300;
       for (const pv of allVehicles) {
         if (pv.el === fv.el) {
@@ -1221,10 +1533,27 @@ function initAlienTank(ufo) {
         }
       }
     }
+    /* retreat mega robots */
+    for (const mv of megaVehicles) {
+      if (!document.body.contains(mv.el)) continue;
+      const exitX = mv.cfg.flip ? W + 400 : -400;
+      for (const pv of allVehicles) {
+        if (pv.el === mv.el) {
+          pv.targetX = exitX;
+          pv.patrolMin = null;
+          pv.patrolMax = null;
+          pv.maxSpeed = 200;
+          break;
+        }
+      }
+    }
     /* clean up after they leave */
     setTimeout(() => {
       for (const fv of fleetVehicles) {
         if (document.body.contains(fv.el)) fv.el.remove();
+      }
+      for (const mv of megaVehicles) {
+        if (document.body.contains(mv.el)) mv.el.remove();
       }
       for (const pv of allVehicles) pv.alive = false;
     }, 6000);

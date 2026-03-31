@@ -1952,6 +1952,284 @@ a {
 }
 
 
+/* ══════════════════════════════════════
+   MEGA ROBOTS — Massive War Machines
+   ══════════════════════════════════════ */
+
+.mega-vehicle {
+  z-index: 9999 !important;
+  filter: drop-shadow(0 0 18px rgba(0,255,200,0.4));
+}
+
+.mega-robot {
+  width: 90px;
+  height: 120px;
+  position: relative;
+}
+
+/* ── Head ── */
+.mega-head {
+  position: absolute;
+  top: 0; left: 50%;
+  transform: translateX(-50%);
+  width: 34px; height: 24px;
+  background: linear-gradient(180deg, #1a3a4a, #0d2030);
+  border-radius: 6px 6px 2px 2px;
+  border: 1.5px solid #2af5c8;
+  box-shadow: 0 0 10px rgba(42,245,200,0.3), inset 0 -4px 8px rgba(0,0,0,0.5);
+  z-index: 5;
+}
+.mega-visor {
+  position: absolute;
+  top: 6px; left: 4px; right: 4px;
+  height: 10px;
+  background: linear-gradient(90deg, #ff2244, #ff4466, #ff2244);
+  border-radius: 2px;
+  box-shadow: 0 0 12px rgba(255,34,68,0.8), 0 0 24px rgba(255,34,68,0.4);
+  animation: visor-scan 2s ease-in-out infinite;
+}
+@keyframes visor-scan {
+  0%, 100% { clip-path: inset(0 60% 0 0); }
+  50% { clip-path: inset(0 0 0 60%); }
+}
+.mega-visor::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  animation: visor-glint 2s ease-in-out infinite;
+}
+@keyframes visor-glint {
+  0%, 100% { transform: translateX(-100%); }
+  50% { transform: translateX(100%); }
+}
+.mega-antenna-l, .mega-antenna-r {
+  position: absolute;
+  top: -10px;
+  width: 2px; height: 12px;
+  background: #2af5c8;
+  box-shadow: 0 0 6px #2af5c8;
+}
+.mega-antenna-l { left: 6px; transform: rotate(-15deg); }
+.mega-antenna-r { right: 6px; transform: rotate(15deg); }
+.mega-antenna-l::after, .mega-antenna-r::after {
+  content: '';
+  position: absolute; top: -3px; left: -2px;
+  width: 6px; height: 6px;
+  background: radial-gradient(#fff, #2af5c8);
+  border-radius: 50%;
+  animation: antenna-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes antenna-pulse {
+  from { opacity: 0.5; transform: scale(0.7); }
+  to { opacity: 1; transform: scale(1.2); }
+}
+
+/* ── Torso ── */
+.mega-torso {
+  position: absolute;
+  top: 22px; left: 50%;
+  transform: translateX(-50%);
+  width: 50px; height: 46px;
+  background: linear-gradient(180deg, #162838, #0c1c28, #0a1620);
+  border-radius: 4px 4px 8px 8px;
+  border: 1.5px solid #1a8a6a;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.6), inset 0 2px 0 rgba(42,245,200,0.1);
+  z-index: 3;
+}
+.mega-core {
+  position: absolute;
+  top: 10px; left: 50%;
+  transform: translateX(-50%);
+  width: 18px; height: 18px;
+  background: radial-gradient(circle, #00ffcc, #00aa88 50%, #004433);
+  border-radius: 50%;
+  border: 2px solid #00ffcc;
+  box-shadow: 0 0 20px rgba(0,255,204,0.6), 0 0 40px rgba(0,255,204,0.3),
+              inset 0 0 8px rgba(255,255,255,0.3);
+  animation: core-pulse 1.5s ease-in-out infinite alternate;
+}
+@keyframes core-pulse {
+  from { box-shadow: 0 0 20px rgba(0,255,204,0.6), 0 0 40px rgba(0,255,204,0.3); }
+  to { box-shadow: 0 0 30px rgba(0,255,204,0.9), 0 0 60px rgba(0,255,204,0.5), 0 0 80px rgba(0,255,204,0.2); }
+}
+.mega-vent {
+  position: absolute;
+  width: 4px; height: 14px;
+  top: 8px;
+  background: repeating-linear-gradient(180deg, #0d2030 0px, #0d2030 2px, #1a5040 2px, #1a5040 3px);
+  border-radius: 1px;
+}
+.mv-l { left: 6px; }
+.mv-r { right: 6px; }
+
+/* ── Arms + Cannons ── */
+.mega-arm {
+  position: absolute;
+  top: 24px;
+  width: 12px; height: 36px;
+  background: linear-gradient(180deg, #1a3040, #0d2028);
+  border: 1px solid #1a6a5a;
+  border-radius: 3px;
+  z-index: 2;
+}
+.mega-arm-l { left: 2px; }
+.mega-arm-r { right: 2px; }
+
+.mega-cannon {
+  position: absolute;
+  bottom: -4px; left: 50%;
+  transform: translateX(-50%);
+  width: 20px; height: 14px;
+  background: linear-gradient(180deg, #2a4a5a, #1a3040);
+  border-radius: 2px 2px 4px 4px;
+  border: 1px solid #2af5c8;
+  box-shadow: 0 0 8px rgba(42,245,200,0.3);
+}
+.mega-barrel {
+  position: absolute !important;
+  top: 4px; left: 18px;
+  width: 22px !important; height: 6px !important;
+  background: linear-gradient(90deg, #2a4a5a, #3af5d0) !important;
+  border-radius: 1px 3px 3px 1px !important;
+  box-shadow: 0 0 8px rgba(42,245,200,0.4) !important;
+}
+.mega-cannon-glow {
+  position: absolute;
+  bottom: -2px; left: 50%;
+  transform: translateX(-50%);
+  width: 14px; height: 4px;
+  background: radial-gradient(ellipse, rgba(0,255,204,0.5), transparent);
+  border-radius: 50%;
+  animation: cannon-glow 0.8s ease-in-out infinite alternate;
+}
+@keyframes cannon-glow {
+  from { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
+/* ── Legs ── */
+.mega-leg {
+  position: absolute;
+  bottom: 16px;
+  width: 14px; height: 32px;
+  background: linear-gradient(180deg, #162838, #0d1e28);
+  border: 1px solid #1a5a4a;
+  border-radius: 3px;
+  z-index: 1;
+}
+.mega-leg-l { left: 18px; animation: mega-walk-l 0.6s ease-in-out infinite; animation-play-state: paused; }
+.mega-leg-r { right: 18px; animation: mega-walk-r 0.6s ease-in-out infinite 0.3s; animation-play-state: paused; }
+
+@keyframes mega-walk-l {
+  0%, 100% { transform: rotate(8deg); }
+  50% { transform: rotate(-8deg); }
+}
+@keyframes mega-walk-r {
+  0%, 100% { transform: rotate(-8deg); }
+  50% { transform: rotate(8deg); }
+}
+
+.mega-foot {
+  position: absolute;
+  bottom: 2px;
+  width: 22px; height: 8px;
+  background: linear-gradient(180deg, #1a3a4a, #0d2030);
+  border: 1px solid #1a8a6a;
+  border-radius: 2px 2px 4px 4px;
+  z-index: 1;
+}
+.mega-foot-l { left: 14px; }
+.mega-foot-r { right: 14px; }
+
+/* ── Jetpack ── */
+.mega-jetpack {
+  position: absolute;
+  top: 28px; left: 50%;
+  transform: translateX(-50%);
+  width: 30px; height: 20px;
+  background: linear-gradient(180deg, #1a2a34, #0d1820);
+  border-radius: 4px;
+  border: 1px solid #1a5a4a;
+  z-index: 0;
+}
+.mega-flame {
+  position: absolute;
+  bottom: -14px;
+  width: 8px; height: 16px;
+  background: linear-gradient(180deg, #00ffcc, #00aaff, rgba(0,100,255,0));
+  border-radius: 0 0 50% 50%;
+  animation: flame-flicker 0.15s ease-in-out infinite alternate;
+  opacity: 0.8;
+}
+.mf-l { left: 4px; }
+.mf-r { right: 4px; animation-delay: 0.08s; }
+
+@keyframes flame-flicker {
+  from { height: 14px; opacity: 0.6; }
+  to { height: 18px; opacity: 1; }
+}
+
+/* ── Walk animation hookup for physics ── */
+.mega-robot .mega-leg-l,
+.mega-robot .mega-leg-r {
+  transform-origin: top center;
+}
+
+/* ── Mega bolt (heavy plasma) ── */
+.mega-bolt {
+  position: fixed;
+  width: 18px; height: 7px;
+  background: linear-gradient(90deg, rgba(0,255,204,0), #00ffcc 30%, #fff 60%, #00ffcc 85%, rgba(0,255,204,0));
+  border-radius: 4px;
+  box-shadow: 0 0 12px #00ffcc, 0 0 24px rgba(0,255,204,0.5), 0 0 4px #fff;
+  z-index: 10001;
+  pointer-events: none;
+}
+.mega-bolt::after {
+  content: '';
+  position: absolute;
+  top: -3px; left: -6px; right: -6px; bottom: -3px;
+  background: radial-gradient(ellipse, rgba(0,255,204,0.2), transparent 70%);
+  border-radius: 50%;
+}
+
+/* ── Mega muzzle flash ── */
+.mega-muzzle-flash {
+  position: fixed;
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fff, #00ffcc 40%, rgba(0,255,204,0) 70%);
+  box-shadow: 0 0 20px #00ffcc, 0 0 40px rgba(0,255,204,0.5);
+  z-index: 10000;
+  pointer-events: none;
+  animation: mega-flash 0.3s ease-out forwards;
+}
+@keyframes mega-flash {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(2); }
+}
+
+/* ── Mega impact (bigger sparks) ── */
+.mega-impact {
+  width: 32px !important; height: 32px !important;
+  background: radial-gradient(circle, #fff, #00ffcc 40%, transparent 70%) !important;
+  box-shadow: 0 0 20px #00ffcc, 0 0 40px rgba(0,255,204,0.4) !important;
+}
+
+/* ── Screen shake on mega robot arrival ── */
+@keyframes mega-shake-anim {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-3px, 2px); }
+  30% { transform: translate(4px, -2px); }
+  50% { transform: translate(-2px, 3px); }
+  70% { transform: translate(3px, -1px); }
+  90% { transform: translate(-1px, 2px); }
+}
+.mega-shake {
+  animation: mega-shake-anim 0.3s ease-in-out;
+}
+
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
