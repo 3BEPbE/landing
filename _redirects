@@ -1,0 +1,3 @@
+# Cloudflare Pages redirects
+# Redirect www to apex
+https://www.zorivo.com/* https://zorivo.com/:splat 301
