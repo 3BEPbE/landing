@@ -800,6 +800,28 @@ a {
   border-top: 1px solid rgba(244, 242, 238, 0.04);
 }
 
+.footer-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.footer-links a {
+  font-size: 0.72rem;
+  color: rgba(244, 242, 238, 0.44);
+  font-family: "DM Mono", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transition:
+    color 200ms ease,
+    opacity 200ms ease;
+}
+
+.footer-links a:hover,
+.footer-links a:focus-visible {
+  color: var(--gold2);
+}
+
 .footer-copy {
   font-size: 0.72rem;
   color: rgba(244, 242, 238, 0.3);
@@ -980,6 +1002,11 @@ a {
     flex-direction: column;
     gap: 12px;
     text-align: center;
+  }
+
+  .footer-links {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 }
 
